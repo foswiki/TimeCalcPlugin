@@ -108,6 +108,7 @@ sub initPlugin {
     $debug = $Foswiki::cfg{Plugins}{TimeCalcPlugin}{Debug} || 0;
 
     Foswiki::Func::registerTagHandler( 'WORKINGDAYS', \&_WORKINGDAYS );
+    
 
     # Plugin correctly initialized
     return 1;
@@ -129,8 +130,6 @@ sub _WORKINGDAYS {
     # $params->{_DEFAULT} will be 'hamburger'
     # $params->{sideorder} will be 'onions'
     
-    my $format       = defined $params->{_DEFAULT} ?
-                       $params->{_DEFAULT} :  '';
     my $startdate    = defined $params->{startdate} ?
                        Foswiki::Time::parseTime( $params->{startdate} ) :
                        time();
