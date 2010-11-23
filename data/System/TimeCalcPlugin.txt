@@ -1,0 +1,39 @@
+---+!! Time Calc Plugin
+
+%SHORTDESCRIPTION%
+
+%TOC%
+
+---++ Description
+
+This plugin enables various calculations of time and dates that you will often need in a business environment.
+
+Some of the features are
+
+   * Calculate working/business days between two dates
+   * Add/subtract a number of working/business days to/from a given date (not yet implemented)
+
+---++ Syntax Rules
+
+%INCLUDE{"VarWORKINGDAYS"}%
+
+---++ Example
+
+   * %<nop>WORKINGDAYS{startdate="23 Nov 2010" enddate="30 Dec 2010" holidays="23 Dec 2010, 24 Dec 2010, 24 Dec 2010"}%
+      * Returns %WORKINGDAYS{startdate="23 Nov 2010" enddate="30 Dec 2010" holidays="23 Dec 2010, 24 Dec 2010, 24 Dec 2010"}%
+
+---++ Installation
+
+%$INSTALL_INSTRUCTIONS%
+
+---++ Plugin Info
+
+|  Plugin Author(s): | Foswiki:Main.KennethLavrsen |
+|  Copyright: | &copy; 2010, Kenneth Lavrsen and Foswiki Contributors |
+|  License: | GPL ([[http://www.gnu.org/copyleft/gpl.html][GNU General Public License]]) |
+|  Release: | %$RELEASE% |
+|  Version: | %$VERSION% |
+|  Change&nbsp;History: | <!-- versions below in reverse order -->&nbsp; |
+|  XX Mmm 20XX (1.0) | Not yet released |
+|  Home: | http://foswiki.org/Extensions/%TOPIC% |
+|  Support: | http://foswiki.org/Support/%TOPIC% |

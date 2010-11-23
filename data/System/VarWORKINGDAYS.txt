@@ -1,0 +1,12 @@
+#VarWORKINGDAYS
+---+++ %<nop>WORKINGDAYS{...}% -- calculate working days
+   * Calculates the number of business days between two dates
+   * Syntax: =%<nop>WORKINGDAYS{startdate="date" enddate="date" holidays="comma separated list of dates" includestart="yes/no" includeend="yes/no"}%=
+   * Supported parameters:
+     | *Parameter:* | *Description:* | *Default:* |
+     | startdate="date" | date can be in any format defined in %SYSTEMWEB%/TimeSpecifications | today |
+     | enddate="date" | date can be in any format defined in %SYSTEMWEB%/TimeSpecifications | today |
+     | holidays="list of dates" | comma separated list of dates. The dates can be in any format defined in %SYSTEMWEB%/TimeSpecifications | None |
+     | includestart="yes or no" | Include the start date in the calculation | "off" |
+     | includeend="yes or no" | Include the end date in the calculation | "on" |
+   * Example: %<nop>WORKINGDAYS{startdate="23 Nov 2010" enddate="30 Dec 2010" holidays="23 Dec 2010, 24 Dec 2010, 24 Dec 2010"}%
