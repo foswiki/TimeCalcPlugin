@@ -2,5 +2,6 @@
 data/System/TimeCalcPlugin.txt 0644 Documentation
 data/System/VarWORKINGDAYS.txt 0644 Documentation
 data/System/VarADDWORKINGDAYS.txt 0644 Documentation
+data/System/VarTIMESHOWSTORE.txt 0644 Documentation
 lib/Foswiki/Plugins/TimeCalcPlugin.pm 0644 Perl module
 

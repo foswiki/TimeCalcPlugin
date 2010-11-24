@@ -12,12 +12,16 @@ Some of the features are
 
    * Calculate working/business days between two dates
    * Add/subtract a number of working/business days to/from a given date
+   * Display a time in any format
+   * Store and use special !TimeCalcPlugin storage variables so a macro can use the result of an earlier used macro
 
 ---++ Syntax Rules
 
 %INCLUDE{"VarWORKINGDAYS"}%
 
 %INCLUDE{"VarADDWORKINGDAYS"}%
+
+%INCLUDE{"VarTIMESHOWSTORE"}%
 
 ---++ Time Format Tokens
 
@@ -43,13 +47,47 @@ For macros where a time format can be specified the following tokens are used
 
 Tokens can be shortened to 3 characters
 
+---++ Storage Macros
+
+Most of the macros in this plugin can store variables that represents a time. These variables can be used later in another macro as an input.
+
+Storage variables names can only be A-Z, a-z,0-9, and _.
+
+A macro can only use a variable as input if it has been defined earlier in the topic. Macros are expanded from top to bottom, from left to right, from inside and out.
+If you try to use a variable that has not been defined, it is set to the current time.
+
+Times that the result of adding working days are always stored as the date with time set to 12:00 GMT.
+Times given as inputs for the working day macros are converted to the same day at 12:00 GMT. Holidays are also converted to 12:00 GMT.
+
+The storage feature can be used to create a chain of dates, for example a schedule in a table, where first date is defined using TIMESHOWSTORE, and the following dates are autocalculated by adding working days with ADDWORKINGDAYS
+
+---++ Holiday lists
+
+List of holidays has to given as comma separated dates. You cannot specify an interval. You can have duplicate dates. The duplicates are ignored.
+This means that you can define macros for public holidays of multiple countries, and a personal calendar with your vacation days and merge them even though they may contain duplicate dates.
+
+You merge them like this: holidays="%<nop>HOLIDAYS%,%<nop>MYVACATIONDAYS%"
+
 ---++ Examples
 
-   * %<nop>WORKINGDAYS{startdate="23 Nov 2010" enddate="30 Dec 2010" holidays="24 Dec 2010, 25 Dec 2010, 26 Dec 2010"}%
-      * Returns (if installed) %WORKINGDAYS{startdate="23 Nov 2010" enddate="30 Dec 2010" holidays="24 Dec 2010, 25 Dec 2010, 26 Dec 2010"}%
+   * %<nop>WORKINGDAYS{startdate="23 Nov 2010" enddate="05 Jan 2011" holidays="24 Dec 2010, 25 Dec 2010, 01 Jan 2011"}%
+      * Returns (value if installed is 30) %WORKINGDAYS{startdate="23 Nov 2010" enddate="05 Jan 2011" holidays="24 Dec 2010, 25 Dec 2010, 01 Jan 2011"}%
 
-   * %<nop>ADDWORKINGDAYS{date="23 Nov 2010" delta="26" holidays="24 Dec 2010, 25 Dec 2010, 26 Dec 2010"}%
-      * Returns (if installed) %ADDWORKINGDAYS{date="23 Nov 2010" delta="26" holidays="24 Dec 2010, 25 Dec 2010, 26 Dec 2010"}%
+   * %<nop>ADDWORKINGDAYS{date="23 Nov 2010" delta="20" holidays="24 Dec 2010, 25 Dec 2010, 26 Dec 2010" store="builddate"}%
+      * Returns (value if installed is 21 Dec 2010) %ADDWORKINGDAYS{date="23 Nov 2010" delta="20" holidays="24 Dec 2010, 25 Dec 2010, 01 Jan 2011" store="builddate"}%
+      
+   * %<nop>ADDWORKINGDAYS{date="$builddate" delta="10" holidays="24 Dec 2010, 25 Dec 2010, 26 Dec 2010" store="shipdate"}%
+      * Returns (value if installed is 05 Jan 2011) %ADDWORKINGDAYS{date="$builddate" delta="10" holidays="24 Dec 2010, 25 Dec 2010, 01 Jan 2011" store="shipdate"}%
+      
+   * %<nop>TIMESHOWSTORE{"$day $month $year" time="$shipdate"}%
+      * Returns (value if installed is 2011-01-05) %TIMESHOWSTORE{"$year-$mo-$day" time="$shipdate"}%
+      
+| *Milestone* | *Raw macro* | *Actual result <br />(if installed)* | *Simulated result* |
+| Start of project | %<nop>TIMESHOWSTORE{"$day $month $year" time="20 Jan 2011" store="start"}% | %TIMESHOWSTORE{"$day $month $year" time="20 Jan 2011" store="start"}% | 20 Jan 2011 |
+| Develop Project | %<nop>ADDWORKINGDAYS{date="$start" delta="30" store="developed"}% | %ADDWORKINGDAYS{date="$start" delta="30" store="developed"}% | 03 Mar 2011 |
+| Build Proto | %<nop>ADDWORKINGDAYS{date="$developed" delta="10" store="proto"}% | %ADDWORKINGDAYS{date="$developed" delta="10" store="proto"}% | 17 Mar 2011 |
+| Test Complete | %<nop>ADDWORKINGDAYS{date="$proto" delta="10" store="tested"}% | %ADDWORKINGDAYS{date="$proto" delta="10" store="tested"}% | 31 Mar 2011 |
+| Ship Product | %<nop>ADDWORKINGDAYS{date="$tested" delta="5" store="shipped"}% | %ADDWORKINGDAYS{date="$tested" delta="10" store="shipped"}% | 14 Apr 2011 |
 
 ---++ Installation
 
@@ -63,6 +101,6 @@ Tokens can be shortened to 3 characters
 |  Release: | %$RELEASE% |
 |  Version: | %$VERSION% |
 |  Change&nbsp;History: | <!-- versions below in reverse order -->&nbsp; |
-|  XX Mmm 20XX (1.0) | Not yet released |
+|  24 Nov 2010 (1.0) | Initial release with features WORKINGDAYS, ADDWORKINGDAYS, and TIMESHOWSTORE with storage variable functionality |
 |  Home: | http://foswiki.org/Extensions/%TOPIC% |
 |  Support: | http://foswiki.org/Support/%TOPIC% |

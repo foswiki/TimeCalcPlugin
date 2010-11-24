@@ -53,7 +53,7 @@ our $VERSION = '$Rev: 9771 $';
 # date    - a date in 1 Jun 2009 format. Three letter English month names only.
 # Note: it's important that this string is exactly the same in the extension
 # topic - if you use %$RELEASE% with BuildContrib this is done automatically.
-our $RELEASE = '0.9.0';
+our $RELEASE = '1.0';
 
 # Short description of this plugin
 # One line description, is shown in the %SYSTEMWEB%.TextFormattingRules topic:
@@ -71,6 +71,8 @@ our $SHORTDESCRIPTION = 'Perform calculations on time and dates';
 # %SYSTEMWEB%.DevelopingPlugins has details of how to define =$Foswiki::cfg=
 # entries so they can be used with =configure=.
 our $NO_PREFS_IN_TOPIC = 1;
+
+my %storage;
 
 =begin TML
 
@@ -110,6 +112,7 @@ sub initPlugin {
 
     Foswiki::Func::registerTagHandler( 'WORKINGDAYS', \&_WORKINGDAYS );
     Foswiki::Func::registerTagHandler( 'ADDWORKINGDAYS', \&_ADDWORKINGDAYS );
+    Foswiki::Func::registerTagHandler( 'TIMESHOWSTORE', \&_TIMESHOWSTORE );
    
 
     # Plugin correctly initialized
@@ -125,43 +128,60 @@ sub _returnNoonOfDate {
 
 sub _WORKINGDAYS {
     my($session, $params, $theTopic, $theWeb) = @_;
-#    # $session  - a reference to the Foswiki session object
-#    #             (you probably won't need it, but documented in Foswiki.pm)
-#    # $params=  - a reference to a Foswiki::Attrs object containing 
-#    #             parameters.
-#    #             This can be used as a simple hash that maps parameter names
-#    #             to values, with _DEFAULT being the name for the default
-#    #             (unnamed) parameter.
-#    # $topic    - name of the topic in the query
-#    # $web      - name of the web in the query
-#    # $topicObject - a reference to a Foswiki::Meta object containing the
-#    #             topic the macro is being rendered in (new for foswiki 1.1.x)
-#    # Return: the result of processing the macro. This will replace the
-#    # macro call in the final text.
-#
-#    # For example, %EXAMPLETAG{'hamburger' sideorder="onions"}%
-#    # $params->{_DEFAULT} will be 'hamburger'
-#    # $params->{sideorder} will be 'onions'
+    # $session  - a reference to the Foswiki session object
+    #             (you probably won't need it, but documented in Foswiki.pm)
+    # $params=  - a reference to a Foswiki::Attrs object containing 
+    #             parameters.
+    #             This can be used as a simple hash that maps parameter names
+    #             to values, with _DEFAULT being the name for the default
+    #             (unnamed) parameter.
+    # $topic    - name of the topic in the query
+    # $web      - name of the web in the query
+    # $topicObject - a reference to a Foswiki::Meta object containing the
+    #             topic the macro is being rendered in (new for foswiki 1.1.x)
+    # Return: the result of processing the macro. This will replace the
+    # macro call in the final text.
+    
+    # For example, %EXAMPLETAG{'hamburger' sideorder="onions"}%
+    # $params->{_DEFAULT} will be 'hamburger'
+    # $params->{sideorder} will be 'onions'
     
     
-    # To do - all dates must be normalized towards noon on the day in case
-    # people enter time.
     # To do - we need to be able to also accept serialized date
-    my $startdate    = defined $params->{startdate} ?
-       _returnNoonOfDate( Foswiki::Time::parseTime( $params->{startdate} ) ) :
-       _returnNoonOfDate( time() );
-    my $enddate      = defined $params->{enddate} ?
-       _returnNoonOfDate( Foswiki::Time::parseTime( $params->{enddate} ) ) :
-       _returnNoonOfDate( time() );
+    my $startdate = $params->{startdate};
+    if ( defined $startdate ) {
+        if ( $startdate =~ /^\s*\$(\w+)/ ) {
+            # if storage does exist the startdate is undefined           
+            $startdate = $storage{ $1 };
+            $startdate = _returnNoonOfDate( $startdate ) if defined $startdate;
+        }
+        else {   
+            $startdate = _returnNoonOfDate( Foswiki::Time::parseTime( $startdate ) );
+        }
+    }
+    $startdate = _returnNoonOfDate( time() ) unless defined $startdate;
+
+    my $enddate = $params->{enddate};
+    if ( defined $enddate ) {
+        if ( $enddate =~ /^\s*\$(\w+)/ ) {
+            # if storage does exist the startdate is undefined           
+            $enddate = $storage{ $1 };
+            $enddate = _returnNoonOfDate( $enddate ) if defined $enddate;
+        }
+        else {   
+            $enddate = _returnNoonOfDate( Foswiki::Time::parseTime( $enddate ) );
+        }
+    }
+    $enddate = _returnNoonOfDate( time() ) unless defined $enddate;
+
     my $holidaysin   = defined $params->{holidays} ?
                        $params->{holidays} : '';
     my $includestart = defined $params->{includestart} ?
                        Foswiki::Func::isTrue( $params->{includestart} ) : 0;
     my $includeend   = defined $params->{includeend} ?
                        Foswiki::Func::isTrue( $params->{includeend} ) : 1;
+    my $storageBin   = $params->{store};
 
-    # To do - all dates must be normalized towards noon on the day in case
-    # people enter time.
     # To do - we need to be able to also accept serialized date    
     my %holidays = ();
     if ( $holidaysin ) {
@@ -207,35 +227,47 @@ sub _WORKINGDAYS {
 
 sub _ADDWORKINGDAYS {
     my($session, $params, $theTopic, $theWeb) = @_;
-#    # $session  - a reference to the Foswiki session object
-#    #             (you probably won't need it, but documented in Foswiki.pm)
-#    # $params=  - a reference to a Foswiki::Attrs object containing 
-#    #             parameters.
-#    #             This can be used as a simple hash that maps parameter names
-#    #             to values, with _DEFAULT being the name for the default
-#    #             (unnamed) parameter.
-#    # $topic    - name of the topic in the query
-#    # $web      - name of the web in the query
-#    # $topicObject - a reference to a Foswiki::Meta object containing the
-#    #             topic the macro is being rendered in (new for foswiki 1.1.x)
-#    # Return: the result of processing the macro. This will replace the
-#    # macro call in the final text.
-#
-#    # For example, %EXAMPLETAG{'hamburger' sideorder="onions"}%
-#    # $params->{_DEFAULT} will be 'hamburger'
-#    # $params->{sideorder} will be 'onions'
+    # $session  - a reference to the Foswiki session object
+    #             (you probably won't need it, but documented in Foswiki.pm)
+    # $params=  - a reference to a Foswiki::Attrs object containing 
+    #             parameters.
+    #             This can be used as a simple hash that maps parameter names
+    #             to values, with _DEFAULT being the name for the default
+    #             (unnamed) parameter.
+    # $topic    - name of the topic in the query
+    # $web      - name of the web in the query
+    # $topicObject - a reference to a Foswiki::Meta object containing the
+    #             topic the macro is being rendered in (new for foswiki 1.1.x)
+    # Return: the result of processing the macro. This will replace the
+    # macro call in the final text.
+
+    # For example, %EXAMPLETAG{'hamburger' sideorder="onions"}%
+    # $params->{_DEFAULT} will be 'hamburger'
+    # $params->{sideorder} will be 'onions'
     
 
     my $formatString = defined $params->{_DEFAULT} ?
                        $params->{_DEFAULT} :
                        $Foswiki::cfg{DefaultDateFormat};
 
-    my $date         = defined $params->{date} ?
-       _returnNoonOfDate( Foswiki::Time::parseTime( $params->{date} ) ) :
-       _returnNoonOfDate( time() );
+    my $date = $params->{date};
+    if ( defined $date ) {
+        if ( $date =~ /^\s*\$(\w+)/ ) {
+            # if storage does not exist the startdate is undefined           
+            $date = $storage{ $1 };
+            $date = _returnNoonOfDate( $date ) if defined $date;
+        }
+        else {   
+            $date = _returnNoonOfDate( Foswiki::Time::parseTime( $date ) );
+        }
+    }
+    $date = _returnNoonOfDate( time() ) unless defined $date;
+
+
     my $delta        = defined $params->{delta} ? $params->{delta} : 0;
     my $holidaysin   = defined $params->{holidays} ?
                        $params->{holidays} : '';
+    my $storageBin   = $params->{store};
 
 
     my %holidays = ();
@@ -252,14 +284,56 @@ sub _ADDWORKINGDAYS {
 
         my $tempwday = ( gmtime( $date ) )[6];
         if ( $tempwday != 6 && $tempwday != 0 && !$holidays{ $date } ) {
-            print STDERR "$delta\n";
             $delta -= $direction;
         }
     }
+    
+    $storage{ $storageBin } = $date if defined $storageBin;
 
     return Foswiki::Time::formatTime($date, $formatString, gmtime);
 }
 
-1;
+sub _TIMESHOWSTORE {
+    my($session, $params, $theTopic, $theWeb) = @_;
+    # $session  - a reference to the Foswiki session object
+    #             (you probably won't need it, but documented in Foswiki.pm)
+    # $params=  - a reference to a Foswiki::Attrs object containing 
+    #             parameters.
+    #             This can be used as a simple hash that maps parameter names
+    #             to values, with _DEFAULT being the name for the default
+    #             (unnamed) parameter.
+    # $topic    - name of the topic in the query
+    # $web      - name of the web in the query
+    # $topicObject - a reference to a Foswiki::Meta object containing the
+    #             topic the macro is being rendered in (new for foswiki 1.1.x)
+    # Return: the result of processing the macro. This will replace the
+    # macro call in the final text.
 
-__END__
+    # For example, %EXAMPLETAG{'hamburger' sideorder="onions"}%
+    # $params->{_DEFAULT} will be 'hamburger'
+    # $params->{sideorder} will be 'onions'
+    
+    my $formatString = defined $params->{_DEFAULT} ?
+                       $params->{_DEFAULT} :
+                       $Foswiki::cfg{DefaultDateFormat};
+
+    my $datetime = $params->{time};
+    if ( defined $datetime ) {
+        if ( $datetime =~ /^\s*\$(\w+)/ ) {
+            # if storage does not exist the startdate is undefined           
+            $datetime = $storage{ $1 };
+        }
+        else {   
+            $datetime = Foswiki::Time::parseTime( $datetime );
+        }
+    }
+    $datetime = time() unless defined $datetime;
+
+    my $storageBin   = $params->{store};
+    
+    $storage{ $storageBin } = $datetime if defined $storageBin;
+
+    return Foswiki::Time::formatTime($datetime, $formatString, gmtime);
+}
+
+1;

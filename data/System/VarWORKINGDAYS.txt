@@ -1,12 +1,13 @@
 #VarWORKINGDAYS
----+++ %<nop>WORKINGDAYS{...}% -- calculate working days
+---+++ WORKINGDAYS{...} -- calculate working days
    * Calculates the number of business days between two dates
-   * Syntax: =%<nop>WORKINGDAYS{startdate="date" enddate="date" holidays="comma separated list of dates" includestart="yes/no" includeend="yes/no"}%=
+   * Syntax: =%<nop>WORKINGDAYS{startdate="date|$variable" enddate="date|$variable" holidays="comma separated list of dates" includestart="on|off" includeend="on|off"}%=
    * Supported parameters:
      | *Parameter:* | *Description:* | *Default:* |
-     | startdate="date" | date can be in any format defined in %SYSTEMWEB%/TimeSpecifications | today |
-     | enddate="date" | date can be in any format defined in %SYSTEMWEB%/TimeSpecifications | today |
+     | startdate="date" | date can be in any format defined in %SYSTEMWEB%/TimeSpecifications (time is ignorred), or it can be the name of a !TimeCalcPlugin storage name prefixed by a '$'. E.g. $myvar | today |
+     | enddate="date" | date can be in any format defined in %SYSTEMWEB%/TimeSpecifications (time is ignorred), or it can be the name of a !TimeCalcPlugin storage name prefixed by a '$'. E.g. $myvar | today |
      | holidays="list of dates" | comma separated list of dates. The dates can be in any format defined in %SYSTEMWEB%/TimeSpecifications | None |
-     | includestart="yes or no" | Include the start date in the calculation | "off" |
-     | includeend="yes or no" | Include the end date in the calculation | "on" |
-   * Example: %<nop>WORKINGDAYS{startdate="23 Nov 2010" enddate="30 Dec 2010" holidays="23 Dec 2010, 24 Dec 2010, 24 Dec 2010"}%
+     | includestart="on or off" | Include the start date in the calculation | "off" |
+     | includeend="on or off" | Include the end date in the calculation | "on" |
+   * Example: %<nop>WORKINGDAYS{startdate="23 Nov 2010" enddate="10 Jan 2011" holidays="24 Dec 2010, 25 Dec 2010, 01 Jan 2011"}%
+   * This macro accepts !TimeCalcPlugin storage variables as input dates but it cannot store any values because the result is not a date.
