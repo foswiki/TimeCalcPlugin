@@ -61,7 +61,7 @@ Times given as inputs for the working day macros are converted to the same day a
 
 The storage feature can be used to create a chain of dates, for example a schedule in a table, where first date is defined using TIMESHOWSTORE, and the following dates are autocalculated by adding working days with ADDWORKINGDAYS
 
----++ Holiday lists
+---++ Holiday Lists
 
 List of holidays has to given as comma separated dates. You cannot specify an interval. You can have duplicate dates. The duplicates are ignored.
 This means that you can define macros for public holidays of multiple countries, and a personal calendar with your vacation days and merge them even though they may contain duplicate dates.
@@ -89,6 +89,23 @@ You merge them like this: holidays="%<nop>HOLIDAYS%,%<nop>MYVACATIONDAYS%"
 | Test Complete | %<nop>ADDWORKINGDAYS{date="$proto" delta="10" store="tested"}% | %ADDWORKINGDAYS{date="$proto" delta="10" store="tested"}% | 31 Mar 2011 |
 | Ship Product | %<nop>ADDWORKINGDAYS{date="$tested" delta="5" store="shipped"}% | %ADDWORKINGDAYS{date="$tested" delta="10" store="shipped"}% | 14 Apr 2011 |
 
+---++ Configuration of Working Days
+
+   * Configure setting {TimeCalcPlugin}{WorkingDays}
+   * Preference setting TIMECALCPLUGIN_WORKINGDAYS
+
+By default the working days are defined as Monday, Tuesday, Wednesday, Thursday, Friday.
+
+You can change this default in configure by setting the {TimeCalcPlugin}{WorkingDays}.
+
+You can redefine the working days by setting the preference TIMECALCPLUGIN_WORKINGDAYS.
+
+It is set by listing the names of the weekdays in English separated by commas.
+
+E.g. to define a work week with Friday and Saturday off define {TimeCalcPlugin}{WorkingDays} as Sunday, Monday, Tuesday, Wednesday, Thursday
+
+For a 7 day work week simply list all 7 days.
+
 ---++ Installation
 
 %$INSTALL_INSTRUCTIONS%
@@ -101,6 +118,7 @@ You merge them like this: holidays="%<nop>HOLIDAYS%,%<nop>MYVACATIONDAYS%"
 |  Release: | %$RELEASE% |
 |  Version: | %$VERSION% |
 |  Change&nbsp;History: | <!-- versions below in reverse order -->&nbsp; |
+|  25 Nov 2010 (1.1) | Adding configuration of working days of the week so it can be used in all cultures and all types of businesses |
 |  24 Nov 2010 (1.0) | Initial release with features WORKINGDAYS, ADDWORKINGDAYS, and TIMESHOWSTORE with storage variable functionality |
 |  Home: | http://foswiki.org/Extensions/%TOPIC% |
 |  Support: | http://foswiki.org/Support/%TOPIC% |

@@ -53,7 +53,7 @@ our $VERSION = '$Rev: 9771 $';
 # date    - a date in 1 Jun 2009 format. Three letter English month names only.
 # Note: it's important that this string is exactly the same in the extension
 # topic - if you use %$RELEASE% with BuildContrib this is done automatically.
-our $RELEASE = '1.0';
+our $RELEASE = '1.1';
 
 # Short description of this plugin
 # One line description, is shown in the %SYSTEMWEB%.TextFormattingRules topic:
@@ -72,7 +72,11 @@ our $SHORTDESCRIPTION = 'Perform calculations on time and dates';
 # entries so they can be used with =configure=.
 our $NO_PREFS_IN_TOPIC = 1;
 
+# Storage hash for the user defined variables
 my %storage;
+
+# hash of working days
+my %workingDays;
 
 =begin TML
 
@@ -113,7 +117,6 @@ sub initPlugin {
     Foswiki::Func::registerTagHandler( 'WORKINGDAYS', \&_WORKINGDAYS );
     Foswiki::Func::registerTagHandler( 'ADDWORKINGDAYS', \&_ADDWORKINGDAYS );
     Foswiki::Func::registerTagHandler( 'TIMESHOWSTORE', \&_TIMESHOWSTORE );
-   
 
     # Plugin correctly initialized
     return 1;
@@ -124,6 +127,24 @@ sub _returnNoonOfDate {
     
     my ( $sec, $min, $hour, $day, $mon, $year, $wday, $yday ) = gmtime($indate);
     return timegm( 0, 0, 12, $day, $mon, $year );
+}
+
+sub _loadWorkingDays {
+    # We assume there is at least one working day in a week so no empty string
+    my $config = Foswiki::Func::getPreferencesValue('TIMECALCPLUGIN_WORKINGDAYS') ||
+                 $Foswiki::cfg{TimeCalcPlugin}{WorkingDays} ||
+                 "Monday, Tuesday, Wednesday, Thursday, Friday";
+    my $i = 0;
+    my $count = 0;
+    my @weekdays = ( 'Sunday', 'Monday', 'Tuesday', 'Wednesday',
+                     'Thursday', 'Friday', 'Saturday' );
+    foreach my $weekday ( @weekdays) {
+        $workingDays{ $i } = $config =~ /$weekday/i;
+        $count++ if $workingDays{ $i };
+        $i++;
+    }
+    $workingDays{ 'count' } = $count;
+    return 1;
 }
 
 sub _WORKINGDAYS {
@@ -146,6 +167,8 @@ sub _WORKINGDAYS {
     # $params->{_DEFAULT} will be 'hamburger'
     # $params->{sideorder} will be 'onions'
     
+    # We load $workingDays if this is first time we run
+    _loadWorkingDays() unless defined $workingDays{ 0 };
     
     # To do - we need to be able to also accept serialized date
     my $startdate = $params->{startdate};
@@ -204,11 +227,12 @@ sub _WORKINGDAYS {
     my $elapsed_days = int( ( $enddate - $startdate ) / 86400 );
     my $whole_weeks  = int( $elapsed_days / 7 );
     my $extra_days   = $elapsed_days - ( $whole_weeks * 7 );
-    my $work_days    = $elapsed_days - ( $whole_weeks * 2 );
+    my $work_days    = $elapsed_days -
+                       ( $whole_weeks * ( 7 - $workingDays{ 'count' } ) );
 
     for ( my $i = 0 ; $i < $extra_days ; $i++ ) {
         my $tempwday = ( gmtime( $enddate - $i * 86400 ) )[6];
-        if ( $tempwday == 6 || $tempwday == 0 ) {
+        if ( !$workingDays{ $tempwday } ) {
             $work_days--;
         }
     }
@@ -216,7 +240,7 @@ sub _WORKINGDAYS {
     foreach my $holiday ( keys %holidays ) {
         my $weekday = ( gmtime( $holiday ) )[6];
         if ( $holiday >= $startdate && $holiday <= $enddate &&
-             $weekday != 6 && $weekday != 0 ) {
+             $workingDays{ $weekday } ) {
            $work_days--;
         }
     }
@@ -245,6 +269,8 @@ sub _ADDWORKINGDAYS {
     # $params->{_DEFAULT} will be 'hamburger'
     # $params->{sideorder} will be 'onions'
     
+    # We load $workingDays if this is first time we run
+    _loadWorkingDays() unless defined $workingDays{ 0 };
 
     my $formatString = defined $params->{_DEFAULT} ?
                        $params->{_DEFAULT} :
@@ -283,7 +309,7 @@ sub _ADDWORKINGDAYS {
         $date += $direction * 86400;
 
         my $tempwday = ( gmtime( $date ) )[6];
-        if ( $tempwday != 6 && $tempwday != 0 && !$holidays{ $date } ) {
+        if ( $workingDays{ $tempwday } && !$holidays{ $date } ) {
             $delta -= $direction;
         }
     }
