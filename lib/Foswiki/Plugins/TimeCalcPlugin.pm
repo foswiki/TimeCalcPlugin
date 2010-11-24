@@ -28,70 +28,73 @@ the text had been included from another topic.
 
 package Foswiki::Plugins::TimeCalcPlugin;
 
+
 # Always use strict to enforce variable scoping
 use strict;
+use warnings;
+
+use Foswiki::Func    ();    # The plugins API
+use Foswiki::Plugins ();    # For the API version
+use Time::Local;
 
 # $VERSION is referred to by Foswiki, and is the only global variable that
-# *must* exist in this package.
-use vars qw( $VERSION $RELEASE $SHORTDESCRIPTION $debug 
-             $pluginName $NO_PREFS_IN_TOPIC
-           );
+# *must* exist in this package. This should always be in the format
+# $Rev: 9771 $ so that Foswiki can determine the checked-in status of the
+# extension.
+our $VERSION = '$Rev: 9771 $';
 
-# This should always be $Rev: 12445$ so that TWiki can determine the checked-in
-# status of the plugin. It is used by the build automation tools, so
-# you should leave it alone.
-$VERSION = '$Rev: 12445$';
-
-# This is a free-form string you can use to "name" your own plugin version.
-# It is *not* used by the build automation tools, but is reported as part
-# of the version number in PLUGINDESCRIPTIONS.
-$RELEASE = '1.0';
+# $RELEASE is used in the "Find More Extensions" automation in configure.
+# It is a manually maintained string used to identify functionality steps.
+# You can use any of the following formats:
+# tuple   - a sequence of integers separated by . e.g. 1.2.3. The numbers
+#           usually refer to major.minor.patch release or similar. You can
+#           use as many numbers as you like e.g. '1' or '1.2.3.4.5'.
+# isodate - a date in ISO8601 format e.g. 2009-08-07
+# date    - a date in 1 Jun 2009 format. Three letter English month names only.
+# Note: it's important that this string is exactly the same in the extension
+# topic - if you use %$RELEASE% with BuildContrib this is done automatically.
+our $RELEASE = '0.9.0';
 
 # Short description of this plugin
 # One line description, is shown in the %SYSTEMWEB%.TextFormattingRules topic:
-$SHORTDESCRIPTION = 'Perform calculations on time and dates';
+our $SHORTDESCRIPTION = 'Perform calculations on time and dates';
 
-# You must set $NO_PREFS_IN_TOPIC to 0 if you want your plugin to use preferences
-# stored in the plugin topic. This default is required for compatibility with
-# older plugins, but imposes a significant performance penalty, and
-# is not recommended. Instead, use $Foswiki::cfg entries set in LocalSite.cfg, or
-# if you want the users to be able to change settings, then use standard TWiki
-# preferences that can be defined in your %USERSWEB%.SitePreferences and overridden
-# at the web and topic level.
-$NO_PREFS_IN_TOPIC = 0;
+# You must set $NO_PREFS_IN_TOPIC to 0 if you want your plugin to use
+# preferences set in the plugin topic. This is required for compatibility
+# with older plugins, but imposes a significant performance penalty, and
+# is not recommended. Instead, leave $NO_PREFS_IN_TOPIC at 1 and use
+# =$Foswiki::cfg= entries, or if you want the users
+# to be able to change settings, then use standard Foswiki preferences that
+# can be defined in your %USERSWEB%.SitePreferences and overridden at the web
+# and topic level.
+#
+# %SYSTEMWEB%.DevelopingPlugins has details of how to define =$Foswiki::cfg=
+# entries so they can be used with =configure=.
+our $NO_PREFS_IN_TOPIC = 1;
 
-# Name of this Plugin, only used in this module
-$pluginName = 'TimeCalcPlugin';
+=begin TML
 
-=pod
-
----++ initPlugin($topic, $web, $user, $installWeb) -> $boolean
+---++ initPlugin($topic, $web, $user) -> $boolean
    * =$topic= - the name of the topic in the current CGI query
    * =$web= - the name of the web in the current CGI query
    * =$user= - the login name of the user
-   * =$installWeb= - the name of the web the plugin is installed in
+   * =$installWeb= - the name of the web the plugin topic is in
+     (usually the same as =$Foswiki::cfg{SystemWebName}=)
 
-REQUIRED
+*REQUIRED*
 
 Called to initialise the plugin. If everything is OK, should return
 a non-zero value. On non-fatal failure, should write a message
-using Foswiki::Func::writeWarning and return 0. In this case
-%FAILEDPLUGINS% will indicate which plugins failed.
+using =Foswiki::Func::writeWarning= and return 0. In this case
+%<nop>FAILEDPLUGINS% will indicate which plugins failed.
 
 In the case of a catastrophic failure that will prevent the whole
 installation from working safely, this handler may use 'die', which
 will be trapped and reported in the browser.
 
-You may also call =Foswiki::Func::registerTagHandler= here to register
-a function to handle variables that have standard TWiki syntax - for example,
-=%MYTAG{"my param" myarg="My Arg"}%. You can also override internal
-TWiki variable handling functions this way, though this practice is unsupported
-and highly dangerous!
-
-__Note:__ Please align variables names with the Plugin name, e.g. if 
-your Plugin is called FooBarPlugin, name variables FOOBAR and/or 
+__Note:__ Please align macro names with the Plugin name, e.g. if
+your Plugin is called !FooBarPlugin, name macros FOOBAR and/or
 FOOBARSOMETHING. This avoids namespace issues.
-
 
 =cut
 
@@ -99,43 +102,57 @@ sub initPlugin {
     my( $topic, $web, $user, $installWeb ) = @_;
 
     # check for Plugins.pm versions
-    if( $Foswiki::Plugins::VERSION < 1.026 ) {
-        Foswiki::Func::writeWarning( "Version mismatch between $pluginName and Plugins.pm" );
+    if ( $Foswiki::Plugins::VERSION < 2.0 ) {
+        Foswiki::Func::writeWarning( 'Version mismatch between ',
+            __PACKAGE__, ' and Plugins.pm' );
         return 0;
     }
 
-    # Set plugin preferences in LocalSite.cfg
-    $debug = $Foswiki::cfg{Plugins}{TimeCalcPlugin}{Debug} || 0;
-
     Foswiki::Func::registerTagHandler( 'WORKINGDAYS', \&_WORKINGDAYS );
-    
+    Foswiki::Func::registerTagHandler( 'ADDWORKINGDAYS', \&_ADDWORKINGDAYS );
+   
 
     # Plugin correctly initialized
     return 1;
 }
 
+sub _returnNoonOfDate {
+    my ( $indate ) = @_;
+    
+    my ( $sec, $min, $hour, $day, $mon, $year, $wday, $yday ) = gmtime($indate);
+    return timegm( 0, 0, 12, $day, $mon, $year );
+}
+
 sub _WORKINGDAYS {
     my($session, $params, $theTopic, $theWeb) = @_;
-    # $session  - a reference to the TWiki session object (if you don't know
-    #             what this is, just ignore it)
-    # $params=  - a reference to a Foswiki::Attrs object containing parameters.
-    #             This can be used as a simple hash that maps parameter names
-    #             to values, with _DEFAULT being the name for the default
-    #             parameter.
-    # $theTopic - name of the topic in the query
-    # $theWeb   - name of the web in the query
-    # Return: the result of processing the variable
-
-    # For example, %EXAMPLETAG{'hamburger' sideorder="onions"}%
-    # $params->{_DEFAULT} will be 'hamburger'
-    # $params->{sideorder} will be 'onions'
+#    # $session  - a reference to the Foswiki session object
+#    #             (you probably won't need it, but documented in Foswiki.pm)
+#    # $params=  - a reference to a Foswiki::Attrs object containing 
+#    #             parameters.
+#    #             This can be used as a simple hash that maps parameter names
+#    #             to values, with _DEFAULT being the name for the default
+#    #             (unnamed) parameter.
+#    # $topic    - name of the topic in the query
+#    # $web      - name of the web in the query
+#    # $topicObject - a reference to a Foswiki::Meta object containing the
+#    #             topic the macro is being rendered in (new for foswiki 1.1.x)
+#    # Return: the result of processing the macro. This will replace the
+#    # macro call in the final text.
+#
+#    # For example, %EXAMPLETAG{'hamburger' sideorder="onions"}%
+#    # $params->{_DEFAULT} will be 'hamburger'
+#    # $params->{sideorder} will be 'onions'
     
+    
+    # To do - all dates must be normalized towards noon on the day in case
+    # people enter time.
+    # To do - we need to be able to also accept serialized date
     my $startdate    = defined $params->{startdate} ?
-                       Foswiki::Time::parseTime( $params->{startdate} ) :
-                       time();
+       _returnNoonOfDate( Foswiki::Time::parseTime( $params->{startdate} ) ) :
+       _returnNoonOfDate( time() );
     my $enddate      = defined $params->{enddate} ?
-                       Foswiki::Time::parseTime( $params->{enddate} ) :
-                       time();
+       _returnNoonOfDate( Foswiki::Time::parseTime( $params->{enddate} ) ) :
+       _returnNoonOfDate( time() );
     my $holidaysin   = defined $params->{holidays} ?
                        $params->{holidays} : '';
     my $includestart = defined $params->{includestart} ?
@@ -143,11 +160,13 @@ sub _WORKINGDAYS {
     my $includeend   = defined $params->{includeend} ?
                        Foswiki::Func::isTrue( $params->{includeend} ) : 1;
 
-    
+    # To do - all dates must be normalized towards noon on the day in case
+    # people enter time.
+    # To do - we need to be able to also accept serialized date    
     my %holidays = ();
     if ( $holidaysin ) {
         foreach my $holiday ( split( /\s*,\s*/, $holidaysin ) ) {
-            $holidays{ Foswiki::Time::parseTime( $holiday ) } = 1;
+            $holidays{ _returnNoonOfDate( Foswiki::Time::parseTime( $holiday ) ) } = 1;
         }
     }
 
@@ -186,4 +205,61 @@ sub _WORKINGDAYS {
 
 }
 
+sub _ADDWORKINGDAYS {
+    my($session, $params, $theTopic, $theWeb) = @_;
+#    # $session  - a reference to the Foswiki session object
+#    #             (you probably won't need it, but documented in Foswiki.pm)
+#    # $params=  - a reference to a Foswiki::Attrs object containing 
+#    #             parameters.
+#    #             This can be used as a simple hash that maps parameter names
+#    #             to values, with _DEFAULT being the name for the default
+#    #             (unnamed) parameter.
+#    # $topic    - name of the topic in the query
+#    # $web      - name of the web in the query
+#    # $topicObject - a reference to a Foswiki::Meta object containing the
+#    #             topic the macro is being rendered in (new for foswiki 1.1.x)
+#    # Return: the result of processing the macro. This will replace the
+#    # macro call in the final text.
+#
+#    # For example, %EXAMPLETAG{'hamburger' sideorder="onions"}%
+#    # $params->{_DEFAULT} will be 'hamburger'
+#    # $params->{sideorder} will be 'onions'
+    
+
+    my $formatString = defined $params->{_DEFAULT} ?
+                       $params->{_DEFAULT} :
+                       $Foswiki::cfg{DefaultDateFormat};
+
+    my $date         = defined $params->{date} ?
+       _returnNoonOfDate( Foswiki::Time::parseTime( $params->{date} ) ) :
+       _returnNoonOfDate( time() );
+    my $delta        = defined $params->{delta} ? $params->{delta} : 0;
+    my $holidaysin   = defined $params->{holidays} ?
+                       $params->{holidays} : '';
+
+
+    my %holidays = ();
+    if ( $holidaysin ) {
+        foreach my $holiday ( split( /\s*,\s*/, $holidaysin ) ) {
+            $holidays{ _returnNoonOfDate( Foswiki::Time::parseTime( $holiday ) ) } = 1;
+        }
+    }
+
+    my $direction = $delta < 0 ? -1 : 1;
+
+    while ( $delta !=0 ) {
+        $date += $direction * 86400;
+
+        my $tempwday = ( gmtime( $date ) )[6];
+        if ( $tempwday != 6 && $tempwday != 0 && !$holidays{ $date } ) {
+            print STDERR "$delta\n";
+            $delta -= $direction;
+        }
+    }
+
+    return Foswiki::Time::formatTime($date, $formatString, gmtime);
+}
+
 1;
+
+__END__

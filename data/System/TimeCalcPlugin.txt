@@ -11,16 +11,45 @@ This plugin enables various calculations of time and dates that you will often n
 Some of the features are
 
    * Calculate working/business days between two dates
-   * Add/subtract a number of working/business days to/from a given date (not yet implemented)
+   * Add/subtract a number of working/business days to/from a given date
 
 ---++ Syntax Rules
 
 %INCLUDE{"VarWORKINGDAYS"}%
 
----++ Example
+%INCLUDE{"VarADDWORKINGDAYS"}%
 
-   * %<nop>WORKINGDAYS{startdate="23 Nov 2010" enddate="30 Dec 2010" holidays="23 Dec 2010, 24 Dec 2010, 24 Dec 2010"}%
-      * Returns %WORKINGDAYS{startdate="23 Nov 2010" enddate="30 Dec 2010" holidays="23 Dec 2010, 24 Dec 2010, 24 Dec 2010"}%
+---++ Time Format Tokens
+
+For macros where a time format can be specified the following tokens are used
+
+| *Token:* | *Unit:* | *Example* |
+| =$seconds= | seconds | 59 |
+| =$minutes= | minutes | 59 |
+| =$hours= | hours | 23 |
+| =$day= | day of month | 31 |
+| =$wday= | day of the Week (Sun, Mon, Tue, Wed, Thu, Fri, Sat) | Thu |
+| =$dow= | day of the week (Sun = 0) | 2  |
+| =$week= | number of week in year (ISO 8601) | 34 |
+| =$month= | short name of month | Dec |
+| =$mo= | 2 digit month | 12 |
+| =$year= | 4 digit year | 1999 |
+| =$ye= | 2 digit year | 99 |
+| =$tz= | either "GMT" (if set to gmtime), or "Local" (if set to servertime) | GMT |
+| =$iso= | ISO format timestamp | %GMTIME{"$iso"}% |
+| =$rcs= | RCS format timestamp | %GMTIME{"$rcs"}% |
+| =$http= | E-mail & http format timestamp | %GMTIME{"$http"}% |
+| =$epoch= | Number of seconds since 00:00 on 1st January, 1970 | %GMTIME{"$epoch"}% |
+
+Tokens can be shortened to 3 characters
+
+---++ Examples
+
+   * %<nop>WORKINGDAYS{startdate="23 Nov 2010" enddate="30 Dec 2010" holidays="24 Dec 2010, 25 Dec 2010, 26 Dec 2010"}%
+      * Returns (if installed) %WORKINGDAYS{startdate="23 Nov 2010" enddate="30 Dec 2010" holidays="24 Dec 2010, 25 Dec 2010, 26 Dec 2010"}%
+
+   * %<nop>ADDWORKINGDAYS{date="23 Nov 2010" delta="26" holidays="24 Dec 2010, 25 Dec 2010, 26 Dec 2010"}%
+      * Returns (if installed) %ADDWORKINGDAYS{date="23 Nov 2010" delta="26" holidays="24 Dec 2010, 25 Dec 2010, 26 Dec 2010"}%
 
 ---++ Installation
 
