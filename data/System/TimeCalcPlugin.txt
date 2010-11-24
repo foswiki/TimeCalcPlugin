@@ -1,6 +1,6 @@
 ---+!! Time Calc Plugin
 
-%SHORTDESCRIPTION%
+%$SHORTDESCRIPTION%
 
 %TOC%
 
