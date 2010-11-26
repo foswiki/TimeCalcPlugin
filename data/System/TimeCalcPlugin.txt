@@ -11,9 +11,11 @@ This plugin enables various calculations of time and dates that you will often n
 Some of the features are
 
    * Calculate working/business days between two dates
-   * Add/subtract a number of working/business days to/from a given date
+   * Add/subtract a number of working/business days to/from a given list of dates
+   * When adding working dates the result is calculated based on the latest of the input dates. When subtracking the result is based on the earliest of the input dates.
    * Display a time in any format
    * Store and use special !TimeCalcPlugin storage variables so a macro can use the result of an earlier used macro
+   * Chain project tasks and see the milestones with dates calculated based on the critical path through the project
 
 ---++ Syntax Rules
 
@@ -73,20 +75,26 @@ You merge them like this: holidays="%<nop>HOLIDAYS%,%<nop>MYVACATIONDAYS%"
    * %<nop>WORKINGDAYS{startdate="23 Nov 2010" enddate="05 Jan 2011" holidays="24 Dec 2010, 25 Dec 2010, 01 Jan 2011"}%
       * Returns (value if installed is 30) %WORKINGDAYS{startdate="23 Nov 2010" enddate="05 Jan 2011" holidays="24 Dec 2010, 25 Dec 2010, 01 Jan 2011"}%
 
-   * %<nop>ADDWORKINGDAYS{date="23 Nov 2010" delta="20" holidays="24 Dec 2010, 25 Dec 2010, 26 Dec 2010" store="builddate"}%
-      * Returns (value if installed is 21 Dec 2010) %ADDWORKINGDAYS{date="23 Nov 2010" delta="20" holidays="24 Dec 2010, 25 Dec 2010, 01 Jan 2011" store="builddate"}%
+   * %<nop>ADDWORKINGDAYS{date="23 Nov 2010" delta="20" holidays="24 Dec 2010, 25 Dec 2010, 26 Dec 2010" store="build1date"}%
+      * Returns (value if installed is 21 Dec 2010) %ADDWORKINGDAYS{date="23 Nov 2010" delta="20" holidays="24 Dec 2010, 25 Dec 2010, 01 Jan 2011" store="build1date"}%
+
+   * %<nop>ADDWORKINGDAYS{date="23 Nov 2010" delta="15" holidays="24 Dec 2010, 25 Dec 2010, 26 Dec 2010" store="build2date"}%
+      * Returns (value if installed is 14 Dec 2010) %ADDWORKINGDAYS{date="23 Nov 2010" delta="15" holidays="24 Dec 2010, 25 Dec 2010, 01 Jan 2011" store="build2date"}%
       
-   * %<nop>ADDWORKINGDAYS{date="$builddate" delta="10" holidays="24 Dec 2010, 25 Dec 2010, 26 Dec 2010" store="shipdate"}%
-      * Returns (value if installed is 05 Jan 2011) %ADDWORKINGDAYS{date="$builddate" delta="10" holidays="24 Dec 2010, 25 Dec 2010, 01 Jan 2011" store="shipdate"}%
+   * %<nop>ADDWORKINGDAYS{date="$build1date,$build2date" delta="10" holidays="24 Dec 2010, 25 Dec 2010, 26 Dec 2010" store="shipdate"}%
+      * Returns (value if installed is 05 Jan 2011) %ADDWORKINGDAYS{date="$build1date,$build2date" delta="10" holidays="24 Dec 2010, 25 Dec 2010, 01 Jan 2011" store="shipdate"}%
       
    * %<nop>TIMESHOWSTORE{"$day $month $year" time="$shipdate"}%
       * Returns (value if installed is 2011-01-05) %TIMESHOWSTORE{"$year-$mo-$day" time="$shipdate"}%
       
+Example of project plan. The test cannot be started until both part A and part B of the product have been built. The plugin calculates the date for Test Complete based on the critical path of the project.
+      
 | *Milestone* | *Raw macro* | *Actual result <br />(if installed)* | *Simulated result* |
 | Start of project | %<nop>TIMESHOWSTORE{"$day $month $year" time="20 Jan 2011" store="start"}% | %TIMESHOWSTORE{"$day $month $year" time="20 Jan 2011" store="start"}% | 20 Jan 2011 |
 | Develop Project | %<nop>ADDWORKINGDAYS{date="$start" delta="30" store="developed"}% | %ADDWORKINGDAYS{date="$start" delta="30" store="developed"}% | 03 Mar 2011 |
-| Build Proto | %<nop>ADDWORKINGDAYS{date="$developed" delta="10" store="proto"}% | %ADDWORKINGDAYS{date="$developed" delta="10" store="proto"}% | 17 Mar 2011 |
-| Test Complete | %<nop>ADDWORKINGDAYS{date="$proto" delta="10" store="tested"}% | %ADDWORKINGDAYS{date="$proto" delta="10" store="tested"}% | 31 Mar 2011 |
+| Build Part A | %<nop>ADDWORKINGDAYS{date="$developed" delta="8" store="part1"}% | %ADDWORKINGDAYS{date="$developed" delta="8" store="part1"}% | 15 Mar 2011 |
+| Build Part B | %<nop>ADDWORKINGDAYS{date="$developed" delta="10" store="part2"}% | %ADDWORKINGDAYS{date="$developed" delta="10" store="part2"}% | 17 Mar 2011 |
+| Test Complete | %<nop>ADDWORKINGDAYS{date="$part1,$part2" delta="10" store="tested"}% | %ADDWORKINGDAYS{date="$part1,$part2" delta="10" store="tested"}% | 31 Mar 2011 |
 | Ship Product | %<nop>ADDWORKINGDAYS{date="$tested" delta="5" store="shipped"}% | %ADDWORKINGDAYS{date="$tested" delta="10" store="shipped"}% | 14 Apr 2011 |
 
 ---++ Configuration of Working Days
@@ -118,6 +126,7 @@ For a 7 day work week simply list all 7 days.
 |  Release: | %$RELEASE% |
 |  Version: | %$VERSION% |
 |  Change&nbsp;History: | <!-- versions below in reverse order -->&nbsp; |
+|  26 Nov 2010 (1.2) | ADDWORKINGDAYS now accepts multiple input dates or variables and will calculates based on the date that defines the critical path of the project |
 |  25 Nov 2010 (1.1) | Adding configuration of working days of the week so it can be used in all cultures and all types of businesses |
 |  24 Nov 2010 (1.0) | Initial release with features WORKINGDAYS, ADDWORKINGDAYS, and TIMESHOWSTORE with storage variable functionality |
 |  Home: | http://foswiki.org/Extensions/%TOPIC% |

@@ -53,7 +53,7 @@ our $VERSION = '$Rev: 9771 $';
 # date    - a date in 1 Jun 2009 format. Three letter English month names only.
 # Note: it's important that this string is exactly the same in the extension
 # topic - if you use %$RELEASE% with BuildContrib this is done automatically.
-our $RELEASE = '1.1';
+our $RELEASE = '1.2';
 
 # Short description of this plugin
 # One line description, is shown in the %SYSTEMWEB%.TextFormattingRules topic:
@@ -275,35 +275,54 @@ sub _ADDWORKINGDAYS {
     my $formatString = defined $params->{_DEFAULT} ?
                        $params->{_DEFAULT} :
                        $Foswiki::cfg{DefaultDateFormat};
+                       
+    my $delta        = defined $params->{delta} ? $params->{delta} : 0;
+    my $direction    = $delta < 0 ? -1 : 1;
 
-    my $date = $params->{date};
-    if ( defined $date ) {
-        if ( $date =~ /^\s*\$(\w+)/ ) {
-            # if storage does not exist the startdate is undefined           
-            $date = $storage{ $1 };
-            $date = _returnNoonOfDate( $date ) if defined $date;
-        }
-        else {   
-            $date = _returnNoonOfDate( Foswiki::Time::parseTime( $date ) );
+    my $dateString   = $params->{date};
+
+    my $date         = undef;
+    
+    if ( defined $dateString ) {
+        my $tmpdate = undef;
+        foreach my $indate ( split( /\s*,\s*/, $dateString ) ) {
+            if ( $indate =~ /^\s*\$(\w+)/ ) {
+                # If storage does not exist it is ignorred           
+                $tmpdate = _returnNoonOfDate( $storage{ $1 } )
+                  if defined $storage{ $1 };
+            }
+            else {
+                # If parseTime cannot understand the input it returns undef
+                $tmpdate = _returnNoonOfDate( Foswiki::Time::parseTime( $indate ) );
+            }
+            
+            # Choose date that creates the critical path
+            if ( defined $date ) {
+                $date = $direction * $date > $direction * $tmpdate ?
+                        $date : $tmpdate;
+            }
+            else {
+                $date = $tmpdate;
+            }
         }
     }
+    
+    # If none of the dates or $strings could be turned into dates
+    # above, we default the date to today
     $date = _returnNoonOfDate( time() ) unless defined $date;
 
-
-    my $delta        = defined $params->{delta} ? $params->{delta} : 0;
     my $holidaysin   = defined $params->{holidays} ?
                        $params->{holidays} : '';
     my $storageBin   = $params->{store};
 
 
+    # We put holidays in a hash instead of array to prune out duplicates
     my %holidays = ();
     if ( $holidaysin ) {
         foreach my $holiday ( split( /\s*,\s*/, $holidaysin ) ) {
             $holidays{ _returnNoonOfDate( Foswiki::Time::parseTime( $holiday ) ) } = 1;
         }
     }
-
-    my $direction = $delta < 0 ? -1 : 1;
 
     while ( $delta !=0 ) {
         $date += $direction * 86400;

@@ -1,0 +1,12 @@
+#VarADDWORKINGDAYS
+---+++ ADDWORKINGDAYS{...} -- add working days to date
+   * Calculates the day that is a number of working days later or earlier then a given date
+   * Syntax: =%<nop>ADDWORKINGDAYS{"format" date="date|$variable" delta="days" holidays="comma separated list of dates"}%=
+   * Supported parameters:
+     | *Parameter:* | *Description:* | *Default:* |
+     | "format" | Format of the displayed date. Time is always 12:00 in returned result. The tokens are specified Time Format Tokens below | format defined by the {DefaultDateFormat} setting in configure |
+     | date="date" | List of dates separated by comma.<br />If delta is a positive number the latest of the dates is used.<br />If delta is negative the earliest date is used.<br />The dates can be in any format defined in %SYSTEMWEB%/TimeSpecifications (time is ignorred), or it can be the name of a TimeCalcPlugin storage name prefixed by a '$'. E.g. $myvar | today |
+     | delta="number of days" | Days can be positive for the future or negative for the past | 0 |
+     | holidays="list of dates" | comma separated list of dates. The dates can be in any format defined in %SYSTEMWEB%/TimeSpecifications | None |
+   * Example: %<nop>ADDWORKINGDAYS{"$year-$mo-$day date="23 Nov 2010" delta="25" holidays="24 Dec 2010, 25 Dec 2010, 01 Jan 2011"}%
+   * Note: When adding working days the start day is not included. The resulting enddate is included.
