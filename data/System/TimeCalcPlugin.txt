@@ -70,6 +70,8 @@ This means that you can define macros for public holidays of multiple countries,
 
 You merge them like this: holidays="%<nop>HOLIDAYS%,%<nop>MYVACATIONDAYS%"
 
+You can define a preference setting TIMECALCPLUGIN_HOLIDAYS in the current topic, in !WebPreferences, or !%SITEPREFERENCES% which defines a default holiday list which is then used if you do not specify any holiday parameter in ADDWORKINGDAYS.
+
 ---++ Examples
 
    * %<nop>WORKINGDAYS{startdate="23 Nov 2010" enddate="05 Jan 2011" holidays="24 Dec 2010, 25 Dec 2010, 01 Jan 2011"}%
@@ -126,6 +128,8 @@ For a 7 day work week simply list all 7 days.
 |  Release: | %$RELEASE% |
 |  Version: | %$VERSION% |
 |  Change&nbsp;History: | <!-- versions below in reverse order -->&nbsp; |
+|  24 Jan 2011 (1.4) | Document the store parameter for ADDWORKINGDAYS |
+|  05 Dec 2010 (1.3) | Add preference setting TIMECALCPLUGIN_HOLIDAYS so you do not have the specify the holidays in every single ADDWORKINGDAYS macro |
 |  26 Nov 2010 (1.2) | ADDWORKINGDAYS now accepts multiple input dates or variables and will calculates based on the date that defines the critical path of the project |
 |  25 Nov 2010 (1.1) | Adding configuration of working days of the week so it can be used in all cultures and all types of businesses |
 |  24 Nov 2010 (1.0) | Initial release with features WORKINGDAYS, ADDWORKINGDAYS, and TIMESHOWSTORE with storage variable functionality |

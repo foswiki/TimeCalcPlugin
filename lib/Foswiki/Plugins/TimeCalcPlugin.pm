@@ -39,9 +39,9 @@ use Time::Local;
 
 # $VERSION is referred to by Foswiki, and is the only global variable that
 # *must* exist in this package. This should always be in the format
-# $Rev: 9771 $ so that Foswiki can determine the checked-in status of the
+# $Rev: 10080 (2010-11-26) $ so that Foswiki can determine the checked-in status of the
 # extension.
-our $VERSION = '$Rev: 9771 $';
+our $VERSION = '$Rev: 10080 (2010-11-26) $';
 
 # $RELEASE is used in the "Find More Extensions" automation in configure.
 # It is a manually maintained string used to identify functionality steps.
@@ -53,7 +53,7 @@ our $VERSION = '$Rev: 9771 $';
 # date    - a date in 1 Jun 2009 format. Three letter English month names only.
 # Note: it's important that this string is exactly the same in the extension
 # topic - if you use %$RELEASE% with BuildContrib this is done automatically.
-our $RELEASE = '1.2';
+our $RELEASE = '1.4';
 
 # Short description of this plugin
 # One line description, is shown in the %SYSTEMWEB%.TextFormattingRules topic:
@@ -197,8 +197,9 @@ sub _WORKINGDAYS {
     }
     $enddate = _returnNoonOfDate( time() ) unless defined $enddate;
 
-    my $holidaysin   = defined $params->{holidays} ?
-                       $params->{holidays} : '';
+    my $holidaysin   = defined $params->{holidays} ? $params->{holidays} :
+       ( Foswiki::Func::getPreferencesValue('TIMECALCPLUGIN_HOLIDAYS') || '' );
+
     my $includestart = defined $params->{includestart} ?
                        Foswiki::Func::isTrue( $params->{includestart} ) : 0;
     my $includeend   = defined $params->{includeend} ?

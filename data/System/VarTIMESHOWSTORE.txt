@@ -6,5 +6,5 @@
      | *Parameter:* | *Description:* | *Default:* |
      | "format" | Format of the displayed date. The tokens are specified Time Format Tokens below | format defined by the {DefaultDateFormat} setting in configure |
      | time="time" | time can be in any format defined in %SYSTEMWEB%/TimeSpecifications (time is ignorred), or it can be the name of a TimeCalcPlugin storage name prefixed by a '$'. E.g. $myvar | time now |
-     | store="name of storage variable" | If a name is defined the time in date will be stored in a variable with this name | none |
+     | store="variablename" | Name of a variable in which the calculated date is stored. This variable can be used in another !TimeCalcPlugin macro as an input date | none |
    * Example: %<nop>TIMESHOWSTORE{"$year-$mo-$day date="23 Nov 2010" store="$myvar"}% displays 2010-11-23 and stored the date in myvar.
