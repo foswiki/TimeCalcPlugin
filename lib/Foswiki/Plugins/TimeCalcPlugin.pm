@@ -28,6 +28,7 @@ the text had been included from another topic.
 
 package Foswiki::Plugins::TimeCalcPlugin;
 
+
 # Always use strict to enforce variable scoping
 use strict;
 use warnings;
@@ -104,7 +105,7 @@ FOOBARSOMETHING. This avoids namespace issues.
 =cut
 
 sub initPlugin {
-    my ( $topic, $web, $user, $installWeb ) = @_;
+    my( $topic, $web, $user, $installWeb ) = @_;
 
     # check for Plugins.pm versions
     if ( $Foswiki::Plugins::VERSION < 2.0 ) {
@@ -113,49 +114,44 @@ sub initPlugin {
         return 0;
     }
 
-    Foswiki::Func::registerTagHandler( 'WORKINGDAYS',    \&_WORKINGDAYS );
+    Foswiki::Func::registerTagHandler( 'WORKINGDAYS', \&_WORKINGDAYS );
     Foswiki::Func::registerTagHandler( 'ADDWORKINGDAYS', \&_ADDWORKINGDAYS );
-    Foswiki::Func::registerTagHandler( 'TIMESHOWSTORE',  \&_TIMESHOWSTORE );
+    Foswiki::Func::registerTagHandler( 'TIMESHOWSTORE', \&_TIMESHOWSTORE );
 
     # Plugin correctly initialized
     return 1;
 }
 
 sub _returnNoonOfDate {
-    my ($indate) = @_;
-
+    my ( $indate ) = @_;
+    
     my ( $sec, $min, $hour, $day, $mon, $year, $wday, $yday ) = gmtime($indate);
     return timegm( 0, 0, 12, $day, $mon, $year );
 }
 
 sub _loadWorkingDays {
-
     # We assume there is at least one working day in a week so no empty string
-    my $config =
-         Foswiki::Func::getPreferencesValue('TIMECALCPLUGIN_WORKINGDAYS')
-      || $Foswiki::cfg{TimeCalcPlugin}{WorkingDays}
-      || "Monday, Tuesday, Wednesday, Thursday, Friday";
-    my $i        = 0;
-    my $count    = 0;
-    my @weekdays = (
-        'Sunday',   'Monday', 'Tuesday', 'Wednesday',
-        'Thursday', 'Friday', 'Saturday'
-    );
-    foreach my $weekday (@weekdays) {
-        $workingDays{$i} = $config =~ /$weekday/i;
-        $count++ if $workingDays{$i};
+    my $config = Foswiki::Func::getPreferencesValue('TIMECALCPLUGIN_WORKINGDAYS') ||
+                 $Foswiki::cfg{TimeCalcPlugin}{WorkingDays} ||
+                 "Monday, Tuesday, Wednesday, Thursday, Friday";
+    my $i = 0;
+    my $count = 0;
+    my @weekdays = ( 'Sunday', 'Monday', 'Tuesday', 'Wednesday',
+                     'Thursday', 'Friday', 'Saturday' );
+    foreach my $weekday ( @weekdays) {
+        $workingDays{ $i } = $config =~ /$weekday/i;
+        $count++ if $workingDays{ $i };
         $i++;
     }
-    $workingDays{'count'} = $count;
+    $workingDays{ 'count' } = $count;
     return 1;
 }
 
 sub _WORKINGDAYS {
-    my ( $session, $params, $theTopic, $theWeb ) = @_;
-
+    my($session, $params, $theTopic, $theWeb) = @_;
     # $session  - a reference to the Foswiki session object
     #             (you probably won't need it, but documented in Foswiki.pm)
-    # $params=  - a reference to a Foswiki::Attrs object containing
+    # $params=  - a reference to a Foswiki::Attrs object containing 
     #             parameters.
     #             This can be used as a simple hash that maps parameter names
     #             to values, with _DEFAULT being the name for the default
@@ -166,26 +162,24 @@ sub _WORKINGDAYS {
     #             topic the macro is being rendered in (new for foswiki 1.1.x)
     # Return: the result of processing the macro. This will replace the
     # macro call in the final text.
-
+    
     # For example, %EXAMPLETAG{'hamburger' sideorder="onions"}%
     # $params->{_DEFAULT} will be 'hamburger'
     # $params->{sideorder} will be 'onions'
-
+    
     # We load $workingDays if this is first time we run
-    _loadWorkingDays() unless defined $workingDays{0};
-
+    _loadWorkingDays() unless defined $workingDays{ 0 };
+    
     # To do - we need to be able to also accept serialized date
     my $startdate = $params->{startdate};
     if ( defined $startdate ) {
         if ( $startdate =~ /^\s*\$(\w+)/ ) {
-
-            # if storage does exist the startdate is undefined
-            $startdate = $storage{$1};
-            $startdate = _returnNoonOfDate($startdate) if defined $startdate;
+            # if storage does exist the startdate is undefined           
+            $startdate = $storage{ $1 };
+            $startdate = _returnNoonOfDate( $startdate ) if defined $startdate;
         }
-        else {
-            $startdate =
-              _returnNoonOfDate( Foswiki::Time::parseTime($startdate) );
+        else {   
+            $startdate = _returnNoonOfDate( Foswiki::Time::parseTime( $startdate ) );
         }
     }
     $startdate = _returnNoonOfDate( time() ) unless defined $startdate;
@@ -193,38 +187,30 @@ sub _WORKINGDAYS {
     my $enddate = $params->{enddate};
     if ( defined $enddate ) {
         if ( $enddate =~ /^\s*\$(\w+)/ ) {
-
-            # if storage does exist the startdate is undefined
-            $enddate = $storage{$1};
-            $enddate = _returnNoonOfDate($enddate) if defined $enddate;
+            # if storage does exist the startdate is undefined           
+            $enddate = $storage{ $1 };
+            $enddate = _returnNoonOfDate( $enddate ) if defined $enddate;
         }
-        else {
-            $enddate = _returnNoonOfDate( Foswiki::Time::parseTime($enddate) );
+        else {   
+            $enddate = _returnNoonOfDate( Foswiki::Time::parseTime( $enddate ) );
         }
     }
     $enddate = _returnNoonOfDate( time() ) unless defined $enddate;
 
-    my $holidaysin =
-      defined $params->{holidays}
-      ? $params->{holidays}
-      : ( Foswiki::Func::getPreferencesValue('TIMECALCPLUGIN_HOLIDAYS') || '' );
+    my $holidaysin   = defined $params->{holidays} ? $params->{holidays} :
+       ( Foswiki::Func::getPreferencesValue('TIMECALCPLUGIN_HOLIDAYS') || '' );
 
-    my $includestart =
-      defined $params->{includestart}
-      ? Foswiki::Func::isTrue( $params->{includestart} )
-      : 0;
-    my $includeend =
-      defined $params->{includeend}
-      ? Foswiki::Func::isTrue( $params->{includeend} )
-      : 1;
-    my $storageBin = $params->{store};
+    my $includestart = defined $params->{includestart} ?
+                       Foswiki::Func::isTrue( $params->{includestart} ) : 0;
+    my $includeend   = defined $params->{includeend} ?
+                       Foswiki::Func::isTrue( $params->{includeend} ) : 1;
+    my $storageBin   = $params->{store};
 
-    # To do - we need to be able to also accept serialized date
+    # To do - we need to be able to also accept serialized date    
     my %holidays = ();
-    if ($holidaysin) {
+    if ( $holidaysin ) {
         foreach my $holiday ( split( /\s*,\s*/, $holidaysin ) ) {
-            $holidays{ _returnNoonOfDate( Foswiki::Time::parseTime($holiday) ) }
-              = 1;
+            $holidays{ _returnNoonOfDate( Foswiki::Time::parseTime( $holiday ) ) } = 1;
         }
     }
 
@@ -235,31 +221,28 @@ sub _WORKINGDAYS {
     # by a few seconds but in practical life it should be OK.
 
     # We allow the two dates to be swapped around
-    ( $startdate, $enddate ) = ( $enddate, $startdate )
-      if ( $startdate > $enddate );
+    ( $startdate, $enddate ) = ( $enddate, $startdate ) if ( $startdate > $enddate );
     use integer;
     $startdate -= 86400 if $includestart;
     $enddate -= 86400 unless $includeend;
     my $elapsed_days = int( ( $enddate - $startdate ) / 86400 );
     my $whole_weeks  = int( $elapsed_days / 7 );
     my $extra_days   = $elapsed_days - ( $whole_weeks * 7 );
-    my $work_days =
-      $elapsed_days - ( $whole_weeks * ( 7 - $workingDays{'count'} ) );
+    my $work_days    = $elapsed_days -
+                       ( $whole_weeks * ( 7 - $workingDays{ 'count' } ) );
 
     for ( my $i = 0 ; $i < $extra_days ; $i++ ) {
         my $tempwday = ( gmtime( $enddate - $i * 86400 ) )[6];
-        if ( !$workingDays{$tempwday} ) {
+        if ( !$workingDays{ $tempwday } ) {
             $work_days--;
         }
     }
-
+    
     foreach my $holiday ( keys %holidays ) {
-        my $weekday = ( gmtime($holiday) )[6];
-        if (   $holiday >= $startdate
-            && $holiday <= $enddate
-            && $workingDays{$weekday} )
-        {
-            $work_days--;
+        my $weekday = ( gmtime( $holiday ) )[6];
+        if ( $holiday >= $startdate && $holiday <= $enddate &&
+             $workingDays{ $weekday } ) {
+           $work_days--;
         }
     }
 
@@ -268,11 +251,10 @@ sub _WORKINGDAYS {
 }
 
 sub _ADDWORKINGDAYS {
-    my ( $session, $params, $theTopic, $theWeb ) = @_;
-
+    my($session, $params, $theTopic, $theWeb) = @_;
     # $session  - a reference to the Foswiki session object
     #             (you probably won't need it, but documented in Foswiki.pm)
-    # $params=  - a reference to a Foswiki::Attrs object containing
+    # $params=  - a reference to a Foswiki::Attrs object containing 
     #             parameters.
     #             This can be used as a simple hash that maps parameter names
     #             to values, with _DEFAULT being the name for the default
@@ -287,85 +269,81 @@ sub _ADDWORKINGDAYS {
     # For example, %EXAMPLETAG{'hamburger' sideorder="onions"}%
     # $params->{_DEFAULT} will be 'hamburger'
     # $params->{sideorder} will be 'onions'
-
+    
     # We load $workingDays if this is first time we run
-    _loadWorkingDays() unless defined $workingDays{0};
+    _loadWorkingDays() unless defined $workingDays{ 0 };
 
-    my $formatString =
-      defined $params->{_DEFAULT}
-      ? $params->{_DEFAULT}
-      : $Foswiki::cfg{DefaultDateFormat};
+    my $formatString = defined $params->{_DEFAULT} ?
+                       $params->{_DEFAULT} :
+                       $Foswiki::cfg{DefaultDateFormat};
+                       
+    my $delta        = defined $params->{delta} ? $params->{delta} : 0;
+    my $direction    = $delta < 0 ? -1 : 1;
 
-    my $delta = defined $params->{delta} ? $params->{delta} : 0;
-    my $direction = $delta < 0 ? -1 : 1;
+    my $dateString   = $params->{date};
 
-    my $dateString = $params->{date};
-
-    my $date = undef;
-
+    my $date         = undef;
+    
     if ( defined $dateString ) {
         my $tmpdate = undef;
         foreach my $indate ( split( /\s*,\s*/, $dateString ) ) {
             if ( $indate =~ /^\s*\$(\w+)/ ) {
-
-                # If storage does not exist it is ignorred
-                $tmpdate = _returnNoonOfDate( $storage{$1} )
-                  if defined $storage{$1};
+                # If storage does not exist it is ignorred           
+                $tmpdate = _returnNoonOfDate( $storage{ $1 } )
+                  if defined $storage{ $1 };
             }
             else {
-
                 # If parseTime cannot understand the input it returns undef
-                $tmpdate =
-                  _returnNoonOfDate( Foswiki::Time::parseTime($indate) );
+                $tmpdate = _returnNoonOfDate( Foswiki::Time::parseTime( $indate ) );
             }
-
+            
             # Choose date that creates the critical path
             if ( defined $date ) {
-                $date =
-                  $direction * $date > $direction * $tmpdate ? $date : $tmpdate;
+                $date = $direction * $date > $direction * $tmpdate ?
+                        $date : $tmpdate;
             }
             else {
                 $date = $tmpdate;
             }
         }
     }
-
+    
     # If none of the dates or $strings could be turned into dates
     # above, we default the date to today
     $date = _returnNoonOfDate( time() ) unless defined $date;
 
-    my $holidaysin = defined $params->{holidays} ? $params->{holidays} : '';
-    my $storageBin = $params->{store};
+    my $holidaysin   = defined $params->{holidays} ?
+                       $params->{holidays} : '';
+    my $storageBin   = $params->{store};
+
 
     # We put holidays in a hash instead of array to prune out duplicates
     my %holidays = ();
-    if ($holidaysin) {
+    if ( $holidaysin ) {
         foreach my $holiday ( split( /\s*,\s*/, $holidaysin ) ) {
-            $holidays{ _returnNoonOfDate( Foswiki::Time::parseTime($holiday) ) }
-              = 1;
+            $holidays{ _returnNoonOfDate( Foswiki::Time::parseTime( $holiday ) ) } = 1;
         }
     }
 
-    while ( $delta != 0 ) {
+    while ( $delta !=0 ) {
         $date += $direction * 86400;
 
-        my $tempwday = ( gmtime($date) )[6];
-        if ( $workingDays{$tempwday} && !$holidays{$date} ) {
+        my $tempwday = ( gmtime( $date ) )[6];
+        if ( $workingDays{ $tempwday } && !$holidays{ $date } ) {
             $delta -= $direction;
         }
     }
+    
+    $storage{ $storageBin } = $date if defined $storageBin;
 
-    $storage{$storageBin} = $date if defined $storageBin;
-
-    return Foswiki::Time::formatTime( $date, $formatString, gmtime );
+    return Foswiki::Time::formatTime($date, $formatString, gmtime);
 }
 
 sub _TIMESHOWSTORE {
-    my ( $session, $params, $theTopic, $theWeb ) = @_;
-
+    my($session, $params, $theTopic, $theWeb) = @_;
     # $session  - a reference to the Foswiki session object
     #             (you probably won't need it, but documented in Foswiki.pm)
-    # $params=  - a reference to a Foswiki::Attrs object containing
+    # $params=  - a reference to a Foswiki::Attrs object containing 
     #             parameters.
     #             This can be used as a simple hash that maps parameter names
     #             to values, with _DEFAULT being the name for the default
@@ -380,30 +358,28 @@ sub _TIMESHOWSTORE {
     # For example, %EXAMPLETAG{'hamburger' sideorder="onions"}%
     # $params->{_DEFAULT} will be 'hamburger'
     # $params->{sideorder} will be 'onions'
-
-    my $formatString =
-      defined $params->{_DEFAULT}
-      ? $params->{_DEFAULT}
-      : $Foswiki::cfg{DefaultDateFormat};
+    
+    my $formatString = defined $params->{_DEFAULT} ?
+                       $params->{_DEFAULT} :
+                       $Foswiki::cfg{DefaultDateFormat};
 
     my $datetime = $params->{time};
     if ( defined $datetime ) {
         if ( $datetime =~ /^\s*\$(\w+)/ ) {
-
-            # if storage does not exist the startdate is undefined
-            $datetime = $storage{$1};
+            # if storage does not exist the startdate is undefined           
+            $datetime = $storage{ $1 };
         }
-        else {
-            $datetime = Foswiki::Time::parseTime($datetime);
+        else {   
+            $datetime = Foswiki::Time::parseTime( $datetime );
         }
     }
     $datetime = time() unless defined $datetime;
 
-    my $storageBin = $params->{store};
+    my $storageBin   = $params->{store};
+    
+    $storage{ $storageBin } = $datetime if defined $storageBin;
 
-    $storage{$storageBin} = $datetime if defined $storageBin;
-
-    return Foswiki::Time::formatTime( $datetime, $formatString, gmtime );
+    return Foswiki::Time::formatTime($datetime, $formatString, gmtime);
 }
 
 1;
