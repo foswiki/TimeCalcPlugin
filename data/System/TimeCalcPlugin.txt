@@ -25,6 +25,8 @@ Some of the features are
 
 %INCLUDE{"VarTIMESHOWSTORE"}%
 
+%INCLUDE{"VarCALENDARDAYS"}%
+
 ---++ Time Format Tokens
 
 For macros where a time format can be specified the following tokens are used
@@ -89,6 +91,12 @@ You can define a preference setting TIMECALCPLUGIN_HOLIDAYS in the current topic
    * %<nop>TIMESHOWSTORE{"$day $month $year" time="$shipdate"}%
       * Returns (value if installed is 2011-01-05) %TIMESHOWSTORE{"$year-$mo-$day" time="$shipdate"}%
       
+   * %<nop>TIMESHOWSTORE{time="12 Jun 2015" delta="last Sunday"}%
+      * Returns (value if installed is 08 Jun 2015) %TIMESHOWSTORE{time="12 Jun 2015" delta="last Monday"}%
+
+   * %<nop>CALENDARDAYS{startdate="23 Nov 2010" enddate="10 Jan 2011"}%
+      * Returns (value if installed is 48) %CALENDARDAYS{startdate="23 Nov 2010" enddate="10 Jan 2011"}%
+     
 Example of project plan. The test cannot be started until both part A and part B of the product have been built. The plugin calculates the date for Test Complete based on the critical path of the project.
       
 | *Milestone* | *Raw macro* | *Actual result <br />(if installed)* | *Simulated result* |
@@ -114,7 +122,9 @@ It is set by listing the names of the weekdays in English separated by commas.
 
 E.g. to define a work week with Friday and Saturday off define {TimeCalcPlugin}{WorkingDays} as Sunday, Monday, Tuesday, Wednesday, Thursday
 
-For a 7 day work week simply list all 7 days.
+For a 7 day work week simply list all 7 days. Or use the CALENDARDAYS macro which does not use working days or holidays.
+
+The plugin requires the CPAN library Time::ParseDate. Redhat/Centos users can run 'yum install perl-Time-ParseDate-2013' with the 'epel' repo enabled. Debian based distributions can install libtime-modules-perl
 
 ---++ Installation
 
@@ -123,11 +133,12 @@ For a 7 day work week simply list all 7 days.
 ---++ Plugin Info
 
 |  Plugin Author(s): | Foswiki:Main.KennethLavrsen |
-|  Copyright: | &copy; 2010, Kenneth Lavrsen and Foswiki Contributors |
+|  Copyright: | &copy; 2010-2015, Kenneth Lavrsen and Foswiki Contributors |
 |  License: | GPL ([[http://www.gnu.org/copyleft/gpl.html][GNU General Public License]]) |
 |  Release: | %$RELEASE% |
 |  Version: | %$VERSION% |
 |  Change&nbsp;History: | <!-- versions below in reverse order -->&nbsp; |
+|  15 Jul 2015 (1.5) | Added CALENDARDAYS to the plugin. Extended the functionality of TIMESHOWSTORE to also accept relative dates as a delta parameter. Plugin now requires the CPAN module Time::ParseDate |
 |  24 Jan 2011 (1.4) | Document the store parameter for ADDWORKINGDAYS |
 |  05 Dec 2010 (1.3) | Add preference setting TIMECALCPLUGIN_HOLIDAYS so you do not have the specify the holidays in every single ADDWORKINGDAYS macro |
 |  26 Nov 2010 (1.2) | ADDWORKINGDAYS now accepts multiple input dates or variables and will calculates based on the date that defines the critical path of the project |

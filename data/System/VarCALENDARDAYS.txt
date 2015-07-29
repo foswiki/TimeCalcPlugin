@@ -1,0 +1,12 @@
+#VarCALENDARDAYS
+---+++ CALENDARDAYS{...} -- calculate calendar days
+   * Calculates the number of calendar days between two dates
+   * Syntax: =%<nop>CALENDARDAYS{startdate="date|$variable" enddate="date|$variable" includestart="on|off" includeend="on|off"}%=
+   * Supported parameters:
+     | *Parameter:* | *Description:* | *Default:* |
+     | startdate="date" | date can be in any format defined in %SYSTEMWEB%/TimeSpecifications (time is ignorred), or it can be the name of a !TimeCalcPlugin storage name prefixed by a '$'. E.g. $myvar | today |
+     | enddate="date" | date can be in any format defined in %SYSTEMWEB%/TimeSpecifications (time is ignorred), or it can be the name of a !TimeCalcPlugin storage name prefixed by a '$'. E.g. $myvar | today |
+     | includestart="on or off" | Include the start date in the calculation | "off" |
+     | includeend="on or off" | Include the end date in the calculation | "on" |
+   * Example: %<nop>CALENDARDAYS{startdate="23 Nov 2010" enddate="10 Jan 2011"}%
+   * This macro accepts !TimeCalcPlugin storage variables as input dates but it cannot store any values because the result is not a date.

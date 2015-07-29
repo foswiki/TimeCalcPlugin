@@ -1,6 +1,6 @@
 # Plugin for Foswiki - The Free and Open Source Wiki, http://foswiki.org/
 #
-# Copyright (C) 2010 Kenneth Lavrsen, kenneth@lavrsen.dk
+# Copyright (C) 2010-2015 Kenneth Lavrsen, kenneth@lavrsen.dk
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -36,12 +36,13 @@ use warnings;
 use Foswiki::Func    ();    # The plugins API
 use Foswiki::Plugins ();    # For the API version
 use Time::Local;
+use Time::ParseDate  ();    # For relative dates
 
 # $VERSION is referred to by Foswiki, and is the only global variable that
 # *must* exist in this package. This should always be in the format
 # $Rev: 10080 (2010-11-26) $ so that Foswiki can determine the checked-in status of the
 # extension.
-our $VERSION = '$Rev: 10080 (2010-11-26) $';
+our $VERSION = '1,5';
 
 # $RELEASE is used in the "Find More Extensions" automation in configure.
 # It is a manually maintained string used to identify functionality steps.
@@ -53,7 +54,7 @@ our $VERSION = '$Rev: 10080 (2010-11-26) $';
 # date    - a date in 1 Jun 2009 format. Three letter English month names only.
 # Note: it's important that this string is exactly the same in the extension
 # topic - if you use %$RELEASE% with BuildContrib this is done automatically.
-our $RELEASE = '1.4';
+our $RELEASE = '1.5';
 
 # Short description of this plugin
 # One line description, is shown in the %SYSTEMWEB%.TextFormattingRules topic:
@@ -117,6 +118,7 @@ sub initPlugin {
     Foswiki::Func::registerTagHandler( 'WORKINGDAYS', \&_WORKINGDAYS );
     Foswiki::Func::registerTagHandler( 'ADDWORKINGDAYS', \&_ADDWORKINGDAYS );
     Foswiki::Func::registerTagHandler( 'TIMESHOWSTORE', \&_TIMESHOWSTORE );
+    Foswiki::Func::registerTagHandler( 'CALENDARDAYS', \&_CALENDARDAYS ); 
 
     # Plugin correctly initialized
     return 1;
@@ -374,12 +376,94 @@ sub _TIMESHOWSTORE {
         }
     }
     $datetime = time() unless defined $datetime;
+    
+    my $relativeTime = defined $params->{delta} ?
+                       $params->{delta} :
+                       0;
+    
+    my $calculatedTime = Time::ParseDate::parsedate( $relativeTime,
+                                                     NO_RELATIVE => 0,
+                                                     DATE_REQUIRED => 1,
+                                                     UK => 1,
+                                                     NOW => $datetime,
+                                                     PREFER_FUTURE => 1,
+                                                     GMT => 1 );
+    
+    $datetime = $calculatedTime if defined $calculatedTime;
 
     my $storageBin   = $params->{store};
     
     $storage{ $storageBin } = $datetime if defined $storageBin;
 
     return Foswiki::Time::formatTime($datetime, $formatString, gmtime);
+}
+
+
+sub _CALENDARDAYS {
+    my($session, $params, $theTopic, $theWeb) = @_;
+    # $session  - a reference to the Foswiki session object
+    #             (you probably won't need it, but documented in Foswiki.pm)
+    # $params=  - a reference to a Foswiki::Attrs object containing 
+    #             parameters.
+    #             This can be used as a simple hash that maps parameter names
+    #             to values, with _DEFAULT being the name for the default
+    #             (unnamed) parameter.
+    # $topic    - name of the topic in the query
+    # $web      - name of the web in the query
+    # $topicObject - a reference to a Foswiki::Meta object containing the
+    #             topic the macro is being rendered in (new for foswiki 1.1.x)
+    # Return: the result of processing the macro. This will replace the
+    # macro call in the final text.
+    
+    # For example, %EXAMPLETAG{'hamburger' sideorder="onions"}%
+    # $params->{_DEFAULT} will be 'hamburger'
+    # $params->{sideorder} will be 'onions'
+    
+   
+    # To do - we need to be able to also accept serialized date
+    my $startdate = $params->{startdate};
+    if ( defined $startdate ) {
+        if ( $startdate =~ /^\s*\$(\w+)/ ) {
+            # if storage does exist the startdate is undefined           
+            $startdate = $storage{ $1 };
+            $startdate = _returnNoonOfDate( $startdate ) if defined $startdate;
+        }
+        else {   
+            $startdate = _returnNoonOfDate( Foswiki::Time::parseTime( $startdate ) );
+        }
+    }
+    $startdate = _returnNoonOfDate( time() ) unless defined $startdate;
+
+    my $enddate = $params->{enddate};
+    if ( defined $enddate ) {
+        if ( $enddate =~ /^\s*\$(\w+)/ ) {
+            # if storage does exist the startdate is undefined           
+            $enddate = $storage{ $1 };
+            $enddate = _returnNoonOfDate( $enddate ) if defined $enddate;
+        }
+        else {   
+            $enddate = _returnNoonOfDate( Foswiki::Time::parseTime( $enddate ) );
+        }
+    }
+    $enddate = _returnNoonOfDate( time() ) unless defined $enddate;
+
+    my $includestart = defined $params->{includestart} ?
+                       Foswiki::Func::isTrue( $params->{includestart} ) : 0;
+    my $includeend   = defined $params->{includeend} ?
+                       Foswiki::Func::isTrue( $params->{includeend} ) : 1;
+ 
+    # Calculate working days between two times.
+    # Times are standard system times (secs since 1970).
+
+    # We allow the two dates to be swapped around
+    ( $startdate, $enddate ) = ( $enddate, $startdate ) if ( $startdate > $enddate );
+    use integer;
+    $startdate -= 86400 if $includestart;
+    $enddate -= 86400 unless $includeend;
+    my $elapsed_days = int( ( $enddate - $startdate ) / 86400 );
+
+    return $elapsed_days;
+
 }
 
 1;
