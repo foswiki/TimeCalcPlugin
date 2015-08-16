@@ -42,7 +42,7 @@ use Time::ParseDate  ();    # For relative dates
 # *must* exist in this package. This should always be in the format
 # $Rev: 10080 (2010-11-26) $ so that Foswiki can determine the checked-in status of the
 # extension.
-our $VERSION = '1,5';
+our $VERSION = '1.5';
 
 # $RELEASE is used in the "Find More Extensions" automation in configure.
 # It is a manually maintained string used to identify functionality steps.
